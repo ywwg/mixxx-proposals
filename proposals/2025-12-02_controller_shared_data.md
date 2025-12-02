@@ -71,7 +71,7 @@ No two hardware mappings will have the same namespace, and we can enforce that w
 `Grouping` is a logical value defined by the controller mapping definition.
 It can be like a Mixxx-style group ("`[Channel1]`") but it can be any arbitrary string.
 Many controllers will want to define something like `deck1` to refer to a device that can itself be assigned to multiple mixxx channels.
-This document does not use the word `group`, instead prefering `grouping`, to try to differentiate Mixxx-style "groups" from this concept, which is a distinct abstraction.
+This document does not use the word `group`, instead preferring `grouping`, to try to differentiate Mixxx-style "groups" from this concept, which is a distinct abstraction.
 
 The controller mapping decides how these groups behave and Mixxx does no enforcement of them.
 To reiterate: even if a "grouping" "looks like" a Mixxx group, it is not.
@@ -88,7 +88,7 @@ Similar to "grouping", keys bear no relation to equivalent Mixxx keys.
 
 The shift button on the left side of a Traktor S4MK3 would be stored this way:
 
-psuedocode:
+pseudocode:
 
 `sharedData["S4MK3"]["deck1"]["shift"] = true`
 
@@ -130,7 +130,7 @@ There is no effect (no logging or error) If a controller does not implement this
 
 ### Possible future directions
 
-The following are possibile future extensions to this proposal that are currently out of scope and will not be implemented in the first version, but we want to make sure to leave room in case we add them in the future:
+The following are possible future extensions to this proposal that are currently out of scope and will not be implemented in the first version, but we want to make sure to leave room in case we add them in the future:
 
 #### Cross-device communication / subscription
 
