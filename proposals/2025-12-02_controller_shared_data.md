@@ -74,7 +74,7 @@ out of scope for this first implementation.
 We will create a central object inside Mixxx that contains a triple-keyed map:
 
 * Namespace (string)
-  * Grouping (string)
+  * Entity (string)
     * Key (string)
       * Value (QVariant)
 
@@ -86,18 +86,15 @@ namespace. e.g. Two CDJ-2000's will both have a namespace like `CDJ_2000`. No
 two hardware mappings will have the same namespace, and we can enforce that with
 a precommit check.
 
-#### Grouping
+#### Entity
 
-`Grouping` is a logical value defined by the controller mapping definition. It
+`Entity` is a logical value defined by the controller mapping definition. It
 can be like a Mixxx-style group ("`[Channel1]`") but it can be any arbitrary
 string. Many controllers will want to define something like `deck1` to refer to
-a device that can itself be assigned to multiple mixxx channels. This document
-does not use the word `group`, instead preferring `grouping`, to try to
-differentiate Mixxx-style "groups" from this concept, which is a distinct
-abstraction.
+a device that can itself be assigned to multiple mixxx channels.
 
-The controller mapping decides how these groups behave and Mixxx does no
-enforcement of them. To reiterate: even if a "grouping" "looks like" a Mixxx
+The controller mapping decides how these entities behave and Mixxx does no
+enforcement of them. To reiterate: even if an "entity" "looks like" a Mixxx
 group, it is not.
 
 #### Key
@@ -105,8 +102,8 @@ group, it is not.
 `Key` is a logical value defined by the controller mapping definition. It could
 refer to a button, light, knob, or abstract name.
 
-The controller mapping decides how these groups behave and Mixxx does no
-enforcement of them. Similar to "grouping", keys bear no relation to equivalent
+The controller mapping decides how these keys behave and Mixxx does no
+enforcement of them. Similar to "entity", keys bear no relation to equivalent
 Mixxx keys.
 
 #### Example
@@ -130,7 +127,7 @@ functions:
 
 excuse the pseudo-js:
 
-`engine.GetSharedData(grouping: string, key: string): Error | any`
+`engine.GetSharedData(entity: string, key: string): Error | any`
 
 `namespace` is set automatically by the engine code, so controllers can't get
 that wrong.
@@ -139,7 +136,7 @@ This function returns error if the value is not found.
 
 #### Set
 
-`engine.SetSharedData(grouping: string, key: string, value: any): void`
+`engine.SetSharedData(entity: string, key: string, value: any): void`
 
 `namespace` is set automatically by the engine code, so controllers can't get
 that wrong.
@@ -155,7 +152,7 @@ prevent circular signal loops.
 Controllers get notified about data updates via a standard callback, which they
 can optionally implement:
 
-`function SharedDataUpdated(grouping: string, key: string, value: any){}`
+`function SharedDataUpdated(entity: string, key: string, value: any){}`
 
 Controllers get update calls for each updated item separately, and can handle
 them however they wish. There is no effect (no logging or error) If a controller
@@ -183,12 +180,12 @@ Another possibility is that we may want a "global" namespaces that all
 controllers can read and write to. This would be another way to support a
 "universal shift" button. This would have to be carefully managed to prevent
 collisions between controller configs. One way to do this would be to "bless"
-specific groupings and keys for the global namespace, and controller authors
-would have to add their requested global grouping/key to Mixxx.
+specific entities and keys for the global namespace, and controller authors
+would have to add their requested global entity/key to Mixxx.
 
 ## Alternatives
 
-The original implementation did not have groupings and keys and instead had a
+The original implementation did not have entities and keys and instead had a
 single namespaced data blob that controllers had to manage themselves. This
 approach requires a lot more work on the part of the controller author to merge
 and manage the data object.
