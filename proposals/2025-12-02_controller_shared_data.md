@@ -121,11 +121,12 @@ Controllers do not get notified about updates they initiated themselves, to prev
 
 #### Updated
 
-Controllers get notified about data updates via a standard callback:
+Controllers get notified about data updates via a standard callback, which they can optionally implement:
 
 `function SharedDataUpdated(grouping: string, key: string, value: any){}`
 
 Controllers get update calls for each updated item separately, and can handle them however they wish.
+There is no effect (no logging or error) If a controller does not implement this function.
 
 ### Possible future directions
 
