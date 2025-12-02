@@ -46,7 +46,7 @@ Specifically, this work is required to fully support the Traktor S4 MK3, which h
 ## "Universal Shift"
 
 "Universal Shift" refers to the idea that a shift button pressed on one controller can be detected by any and all other controllers.
-This may be a useful use-case but creates a lot of difficulties that we are avoiding for now.
+This may be a useful use-case but creates a lot of difficulties, so for now Universal Shift is out of scope for this first implementation.
 
 ## How
 
