@@ -31,7 +31,7 @@ Goals and use cases for the solution as proposed in [How](#how):
 * Namespacing: Allow different controllers to declare same-named data objects without risk of collisions
 * Support controllers with screens that require communication from HID to separate Bulk USB devices (Traktor S4 MK3).
 * Build a data model foundation for users with multiple instances of the same controller (CDJ-2000).
-* Design an API that can support the features we wish to add in the future without breaking controller mappings that use the API defined here.
+* Ensure that the API could support the features we may wish to add in the future, such as global namespace, without breaking controller mappings that use the API defined here.
 
 ### Audience
 
@@ -127,9 +127,9 @@ Controllers get notified about data updates via a standard callback:
 
 Controllers get update calls for each updated item separately, and can handle them however they wish.
 
-### Possible extensions
+### Possible future directions
 
-The following are possibile future extensions to this proposal that are currently out of scope and will not be implemented in the first version:
+The following are possibile future extensions to this proposal that are currently out of scope and will not be implemented in the first version, but we want to make sure to leave room in case we add them in the future:
 
 #### Cross-device communication / subscription
 
