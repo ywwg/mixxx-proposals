@@ -106,6 +106,11 @@ The controller mapping decides how these keys behave and Mixxx does no
 enforcement of them. Similar to "entity", keys bear no relation to equivalent
 Mixxx keys.
 
+#### Value
+
+In the engine, the `value` is stored as a QVariant, however we want to only support a limited set of types in Javascript / Typescript: double, bool, and string.
+The list of allowable types can be expanded as needed, but we want to be sure that the shared data system does not become a "bag of bytes" message bus for large pieces of data like bitmaps or code, nor should it be used to circumvent intentional limitations or gaps in the overall javascript framework.
+
 #### Example
 
 The shift button on the left side of a Traktor S4MK3 would be stored this way:
