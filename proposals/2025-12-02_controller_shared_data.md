@@ -76,7 +76,7 @@ We will create a central object inside Mixxx that contains a triple-keyed map:
 * Namespace (string)
   * Entity (string)
     * Key (string)
-      * Value (QVariant)
+      * Value ("SafeData")
 
 #### Namespace
 
@@ -108,8 +108,22 @@ Mixxx keys.
 
 #### Value
 
-In the engine, the `value` is stored as a QVariant, however we want to only support a limited set of types in Javascript / Typescript: double, bool, and string.
-The list of allowable types can be expanded as needed, but we want to be sure that the shared data system does not become a "bag of bytes" message bus for large pieces of data like bitmaps or code, nor should it be used to circumvent intentional limitations or gaps in the overall javascript framework.
+In the engine, the `value` is stored as a QVariant, however we want to only
+support a limited set of types in Javascript / Typescript. For the first
+implementation, we will support bool, number, and string, and Arrays of those:
+
+```typescript
+type SafePrimitive = string | number | boolean | null;
+
+type SafeData =
+  | SafePrimitive
+  | SafePrimitive[];
+```
+
+The list of allowable types can be expanded as needed, but we want to be sure
+that the shared data system does not become a "bag of bytes" message bus for
+large pieces of data like bitmaps or code, nor should it be used to circumvent
+intentional limitations or gaps in the overall javascript framework.
 
 #### Example
 
