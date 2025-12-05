@@ -108,7 +108,7 @@ Mixxx keys.
 
 #### Value
 
-In the engine, the `value` is stored as a QVariant, however we want to only
+In the engine, the `value` is stored as a QJSValue, however we want to only
 support a limited set of types in Javascript / Typescript. For the first
 implementation, we will support bool, number, and string, and Arrays of those:
 
