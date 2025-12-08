@@ -146,7 +146,7 @@ functions:
 
 excuse the pseudo-js:
 
-`engine.GetSharedData(entity: string, key: string): Error | any`
+`engine.getSharedData(entity: Entity, key: string): SafeData?`
 
 `namespace` is set automatically by the engine code, so controllers can't get
 that wrong.
