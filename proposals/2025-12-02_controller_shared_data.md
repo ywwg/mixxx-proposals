@@ -97,6 +97,24 @@ The controller mapping decides how these entities behave and Mixxx does no
 enforcement of them. To reiterate: even if an "entity" "looks like" a Mixxx
 group, it is not.
 
+Here is partial suggestion for entity definition, which could be extended over
+time.
+
+```typescript
+declare Entities {
+type Mixer = 'mixer';
+type Main = 'main';
+type Library = 'library';
+type Decks = 'deck1' | 'deck2' | 'deck3' | 'deck4';
+type Channels = 'channel1' | 'channel2' | 'channel3' | 'channel4';
+type Controller = 'controller';
+}
+type Entity = Entities.Mixer | Entities.Main | Entities.Library | Entities.Decks | Entities.Channels | Entities.Controller;
+```
+
+Numbered entity names could also be validated with a regular expression such as
+`deck[0-9]+`.
+
 #### Key
 
 `Key` is a logical value defined by the controller mapping definition. It could
@@ -129,9 +147,9 @@ intentional limitations or gaps in the overall javascript framework.
 
 The shift button on the left side of a Traktor S4MK3 would be stored this way:
 
-pseudocode:
+pseudocode -- not final naming:
 
-`sharedData["S4MK3"]["deck1"]["shift"] = true`
+`m_shared_data["S4MK3"]["deck1"]["shift"] = true`
 
 ### API
 
@@ -146,7 +164,7 @@ functions:
 
 excuse the pseudo-js:
 
-`engine.GetSharedData(entity: string, key: string): Error | any`
+`engine.getSharedData(entity: Entity, key: string): SafeData?`
 
 `namespace` is set automatically by the engine code, so controllers can't get
 that wrong.
@@ -155,7 +173,7 @@ This function returns error if the value is not found.
 
 #### Set
 
-`engine.SetSharedData(entity: string, key: string, value: any): void`
+`engine.getSharedData(entity: Entity, key: string, value: SafeData): void`
 
 `namespace` is set automatically by the engine code, so controllers can't get
 that wrong.
@@ -168,14 +186,15 @@ prevent circular signal loops.
 
 #### Updated
 
-Controllers get notified about data updates via a standard callback, which they
-can optionally implement:
+Controllers can subscribe to notifications about data updates via a method
+similar to how they subscribe to engine Control Object updates:
 
-`function SharedDataUpdated(entity: string, key: string, value: any){}`
+(not final naming)
 
-Controllers get update calls for each updated item separately, and can handle
-them however they wish. There is no effect (no logging or error) If a controller
-does not implement this function.
+`function makeSharedDataConnection(entity: Entity, name: string, callback: CoCallback): ScriptConnection | undefined;`
+
+In this first implementation, controllers can only subscribe to updates for
+their own namespace.
 
 ### Possible future directions
 
