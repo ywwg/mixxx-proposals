@@ -173,7 +173,7 @@ This function returns error if the value is not found.
 
 #### Set
 
-`engine.getSharedData(entity: Entity, key: string, value: SafeData): void`
+`engine.setSharedData(entity: Entity, key: string, value: SafeData): void`
 
 `namespace` is set automatically by the engine code, so controllers can't get
 that wrong.
