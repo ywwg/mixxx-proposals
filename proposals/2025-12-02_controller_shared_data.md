@@ -48,8 +48,8 @@ Goals and use cases for the solution as proposed in [How](#how):
 
 Users of modern controllers or multiple controllers will appreciate this work.
 Specifically, this work is required to fully support the Traktor S4 MK3, which
-has separate devices for the controller and the two screens (two total USB
-devices).
+has separate USB interfaces for the controller and the two screens (two total USB
+interfaces).
 
 ## Non-Goals
 
