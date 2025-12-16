@@ -10,8 +10,7 @@
   * [Ability for controller to share data at
     runtime](https://github.com/mixxxdj/mixxx/pull/12199)
 
-> TL;DR: Allow controllers to set and get data objects of arbitrary type for
-> sharing between the controller code and the engine. Think: ControlObjects of
+> TL;DR: Allow controllers mappings to set and retrieve variables of different data types in order to exchange them between the controller code and the engine. Think: ControlObjects of
 > arbitrary type that controllers can declare.
 
 ## Why
