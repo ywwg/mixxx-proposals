@@ -87,10 +87,15 @@ a precommit check.
 
 #### Entity
 
-`Entity` is a logical value defined by the controller mapping definition. It
+`Entity` is a logical value defined by the controller mapping definition or during the initialization of the mapping script (e.g. for readout of a serial number using MIDI commands). It
 can be like a Mixxx-style group ("`[Channel1]`") but it can be any arbitrary
 string. Many controllers will want to define something like `deck1` to refer to
 a device that can itself be assigned to multiple mixxx channels.
+For the case of multiple devices of the same type, it is intended to implement functionality to gather a unique device identifier in a later step. These will than be used as Entity to distinguish the identical devices.
+These identifiers include, but are not limited to:
+
+- USB device serial number (only works for USB and not each manufacturer use unique serial numbers)
+- Operating system provided device identifiers like Container-ID on Windows or Location-ID on macOS
 
 The controller mapping decides how these entities behave and Mixxx does no
 enforcement of them. To reiterate: even if an "entity" "looks like" a Mixxx
@@ -163,7 +168,7 @@ functions:
 
 excuse the pseudo-js:
 
-`engine.getSharedData(entity: Entity, key: string): SafeData?`
+`engine.getSharedValue(entity: Entity|string, key: string): SafeData?`
 
 `namespace` is set automatically by the engine code, so controllers can't get
 that wrong.
