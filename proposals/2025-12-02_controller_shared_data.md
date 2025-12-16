@@ -15,9 +15,8 @@
 
 ## Why
 
-There are multiple scenarios where controllers need to share and access data
-outside the container of the controller mapping file. This includes situations
-where some controllers expose more than one USB device that need to communicate
+There are multiple scenarios where controller mapping scripts need to share and access data outside the container of their own controller script engine. This includes situations
+where some controllers expose more than one USB interface that need to communicate
 with each other, or when a DJ connects multiple instances of the same hardware
 to Mixxx.
 
