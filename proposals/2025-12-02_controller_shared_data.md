@@ -10,15 +10,17 @@
   * [Ability for controller to share data at
     runtime](https://github.com/mixxxdj/mixxx/pull/12199)
 
-> TL;DR: Allow controllers mappings to set and retrieve variables of different data types in order to exchange them between the controller code and the engine. Think: ControlObjects of
-> arbitrary type that controllers can declare.
+> TL;DR: Allow controllers mappings to set and retrieve variables of different
+> data types in order to exchange them between the controller code and the
+> engine. Think: ControlObjects of arbitrary type that controllers can declare.
 
 ## Why
 
-There are multiple scenarios where controller mapping scripts need to share and access data outside the container of their own controller script engine. This includes situations
-where some controllers expose more than one USB interface that need to communicate
-with each other, or when a DJ connects multiple instances of the same hardware
-to Mixxx.
+There are multiple scenarios where controller mapping scripts need to share and
+access data outside the container of their own controller script engine. This
+includes situations where some controllers expose more than one USB interface
+that need to communicate with each other, or when a DJ connects multiple
+instances of the same hardware to Mixxx.
 
 ### Pitfalls of the current solution
 
@@ -86,15 +88,20 @@ a precommit check.
 
 #### Entity
 
-`Entity` is a logical value defined by the controller mapping definition or during the initialization of the mapping script (e.g. for readout of a serial number using MIDI commands). It
-can be like a Mixxx-style group ("`[Channel1]`") but it can be any arbitrary
-string. Many controllers will want to define something like `deck1` to refer to
-a device that can itself be assigned to multiple mixxx channels.
-For the case of multiple devices of the same type, it is intended to implement functionality to gather a unique device identifier in a later step. These will than be used as Entity to distinguish the identical devices.
-These identifiers include, but are not limited to:
+`Entity` is a logical value defined by the controller mapping definition or
+during the initialization of the mapping script (e.g. for readout of a serial
+number using MIDI commands). It can be like a Mixxx-style group ("`[Channel1]`")
+but it can be any arbitrary string. Many controllers will want to define
+something like `deck1` to refer to a device that can itself be assigned to
+multiple mixxx channels. For the case of multiple devices of the same type, it
+is intended to implement functionality to gather a unique device identifier in a
+later step. These will than be used as Entity to distinguish the identical
+devices. These identifiers include, but are not limited to:
 
-- USB device serial number (only works for USB and not each manufacturer use unique serial numbers)
-- Operating system provided device identifiers like Container-ID on Windows or Location-ID on macOS
+* USB device serial number (only works for USB and not each manufacturer use
+  unique serial numbers)
+* Operating system provided device identifiers like Container-ID on Windows or
+  Location-ID on macOS
 
 The controller mapping decides how these entities behave and Mixxx does no
 enforcement of them. To reiterate: even if an "entity" "looks like" a Mixxx
