@@ -82,9 +82,8 @@ We will create a central object inside Mixxx that contains a triple-keyed map:
 
 `Namespace` is a string that is unique to each controller **mapping
 definition**. All connected controllers of the same model will share the same
-namespace. e.g. Two CDJ-2000's will both have a namespace like `CDJ_2000`. No
-two hardware mappings will have the same namespace, and we can enforce that with
-a precommit check.
+namespace. e.g. Two CDJ-2000's will both have a namespace like `CDJ_2000`. All
+hardware mappings must have distinct namespaces.
 
 #### Entity
 
