@@ -76,7 +76,7 @@ We will create a central object inside Mixxx that contains a triple-keyed map:
 * Namespace (string)
   * Entity (string)
     * Key (string)
-      * Value ("SafeData")
+      * Value ("SafeValue")
 
 #### Namespace
 
@@ -147,7 +147,7 @@ implementation, we will support bool, number, and string, and Arrays of those:
 ```typescript
 type SafePrimitive = string | number | boolean | null;
 
-type SafeData =
+type SafeValue =
   | SafePrimitive
   | SafePrimitive[];
 ```
@@ -163,7 +163,7 @@ The shift button on the left side of a Traktor S4MK3 would be stored this way:
 
 pseudocode -- not final naming:
 
-`m_shared_data["S4MK3"]["deck1"]["shift"] = true`
+`m_shared_value["S4MK3"]["deck1"]["shift"] = true`
 
 ### API
 
@@ -171,7 +171,7 @@ The shared data API should be roughly the same across Controllers, QML, and C++.
 The primary difference is that C++ will have access to the namespace value at
 all times, whereas controllers and QML will have that value elided.
 
-The controller javascript has access to the shared data object through three
+The controller javascript has access to the shared value object through three
 functions:
 
 #### Get
@@ -187,7 +187,7 @@ This function returns error if the value is not found.
 
 #### Set
 
-`engine.setSharedData(entity: Entity, key: string, value: SafeData): void`
+`engine.setSharedValue(entity: Entity, key: string, value: SafeData): void`
 
 `namespace` is set automatically by the engine code, so controllers can't get
 that wrong.
@@ -205,7 +205,7 @@ similar to how they subscribe to engine Control Object updates:
 
 (not final naming)
 
-`function makeSharedDataConnection(entity: Entity, name: string, callback: CoCallback): ScriptConnection | undefined;`
+`function makeSharedValueConnection(entity: Entity, name: string, callback: CoCallback): ScriptConnection | undefined;`
 
 In this first implementation, controllers can only subscribe to updates for
 their own namespace.
