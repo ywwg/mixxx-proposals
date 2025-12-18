@@ -81,40 +81,42 @@ We will create a central object inside Mixxx that contains a triple-keyed map:
 #### Namespace
 
 `Namespace` is a string that is unique to each controller **mapping
-definition**. All connected controllers of the same model will share the same
-namespace. e.g. Two CDJ-2000's will both have a namespace like `CDJ_2000`. All
-hardware mappings must have distinct namespaces.
+definition**. All hardware mapping configurations must specify distinct
+namespaces.
+
+Multiple device support is still out of scope for this proposal, but we
+anticipate that this design can expand to support that use case. For example,
+the namespace MAY have a suffix appended to distinguish distinct devices based
+on an automatically-detected unique device identifier, e.g. two CDJ-2000's could
+have namespaces like `CDJ_2000-ABCDEF` and `CDJ_2000-FEDBCA`. This suffix would
+be applied in C++ code outside of the awareness of the controller mapping.
+
+If a unique serial number cannot be determined at runtime, a special controller
+preference (defined in Mixxx, not controller mappings) could be used to map
+which controller is associated with which device through a new API, and this
+value will be passed to controller mappings.
 
 #### Entity
 
-`Entity` is a logical value defined by the controller mapping definition or
-during the initialization of the mapping script (e.g. for readout of a serial
-number using MIDI commands). It can be like a Mixxx-style group ("`[Channel1]`")
-but it can be any arbitrary string. Many controllers will want to define
-something like `deck1` to refer to a device that can itself be assigned to
-multiple mixxx channels. For the case of multiple devices of the same type, it
-is intended to implement functionality to gather a unique device identifier in a
-later step. These will than be used as Entity to distinguish the identical
-devices. These identifiers include, but are not limited to:
+`Entity` is a logical value defined by the controller mapping definition. It can
+be like a Mixxx-style group ("`[Channel1]`") but it can be any of the
+preselected names listed below. Many controllers will want to define something
+like `deck1` to refer to a device that can itself be assigned to multiple mixxx
+channels.
 
-* USB device serial number (only works for USB and not each manufacturer use
-  unique serial numbers)
-* Operating system provided device identifiers like Container-ID on Windows or
-  Location-ID on macOS
-
-The controller mapping decides how these entities behave and Mixxx does no
+The controller mapping decides how these entities behave and Mixxx does not
 enforcement of them. To reiterate: even if an "entity" "looks like" a Mixxx
 group, it is not.
 
-Here is partial suggestion for entity definition, which could be extended over
-time.
+Here is the proposed initial description for entity definition, which is
+anticipated be extended over time.
 
 ```typescript
 declare Entities {
 type Mixer = 'mixer';
 type Main = 'main';
 type Library = 'library';
-type Decks = 'deck1' | 'deck2' | 'deck3' | 'deck4';
+type Decks = 'deck1' | 'deck2';
 type Channels = 'channel1' | 'channel2' | 'channel3' | 'channel4';
 type Controller = 'controller';
 }
@@ -173,7 +175,7 @@ functions:
 
 excuse the pseudo-js:
 
-`engine.getSharedValue(entity: Entity|string, key: string): SafeData?`
+`engine.getSharedValue(entity: Entity, key: string): SafeData?`
 
 `namespace` is set automatically by the engine code, so controllers can't get
 that wrong.
