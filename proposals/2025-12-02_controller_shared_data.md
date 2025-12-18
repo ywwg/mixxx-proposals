@@ -126,6 +126,9 @@ type Entity = Entities.Mixer | Entities.Main | Entities.Library | Entities.Decks
 Numbered entity names could also be validated with a regular expression such as
 `deck[0-9]+`.
 
+'Entity' values are enforced by Typescript library code before function calls
+are handed off to C++.
+
 #### Key
 
 `Key` is a logical value defined by the controller mapping definition. It could
