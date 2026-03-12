@@ -1,7 +1,9 @@
 # XDG Base Directory Support
 
 * **Owners:**
-  * `<@owner: GitHub handle>`
+  * Owen Williams <owilliams@mixxx.org>
+
+* **Proposal Status:** `Draft`
 
 * **Implementation Status:** `Not implemented`
 
@@ -41,14 +43,6 @@ non-essential cached data that may be deleted at any time. The core
 principle is separation of concerns: users and system tools can
 manage each category independently. Note that `$XDG_STATE_HOME` was
 added to the spec in 2021, making it the newest of the four.
-
-The Mixxx codebase already acknowledges this gap. In
-`src/util/cmdlineargs.cpp`, the following comment guards the
-Linux/BSD path:
-
-```cpp
-// We are not ready to switch to XDG folders under Linux, so keeping $HOME/.mixxx as preferences folder. see #8090
-```
 
 [Issue #8090](https://github.com/mixxxdj/mixxx/issues/8090)
 ("replace ~/.mixxx folder with XDG config folders") has been open
@@ -134,29 +128,30 @@ heuristic: "if you delete `~/.cache`, no data is lost; if you delete
 `~/.config`, preferences reset; `~/.local/share` is user-created
 content."
 
-| Current Path (relative to `~/.mixxx/`) | XDG Category | New Path (Linux default) | Rationale |
-|----------------------------------------|-------------|--------------------------|-----------|
-| `mixxx.cfg` | config | `~/.config/mixxx/mixxx.cfg` | Main preferences file; deletion resets all settings to defaults |
-| `soundconfig.xml` | config | `~/.config/mixxx/soundconfig.xml` | Sound hardware configuration; user must reconfigure audio devices if lost |
-| `Custom.kbd.cfg` | config | `~/.config/mixxx/Custom.kbd.cfg` | User keyboard shortcut overrides; configuration by definition |
-| `mixxxdb.sqlite` | data | `~/.local/share/mixxx/mixxxdb.sqlite` | Track library database with irreplaceable user metadata (crates, playlists, play counts, ratings) |
-| `controllers/` | data | `~/.local/share/mixxx/controllers/` | User-created or user-modified controller mappings; user content |
-| `midi/` | data | `~/.local/share/mixxx/midi/` | Legacy controller mappings (pre-1.11.0, still checked); user content |
-| `skins/` | data | `~/.local/share/mixxx/skins/` | User-created custom skins; user content |
-| `broadcast_profiles/` | data | `~/.local/share/mixxx/broadcast_profiles/` | Streaming profiles containing server credentials; user content with secrets |
-| `effects/defaults/` | data | `~/.local/share/mixxx/effects/defaults/` | User-configured effect presets; user content |
-| `effects/chains/` | data | `~/.local/share/mixxx/effects/chains/` | User-configured effect chain presets; user content |
-| `sandbox.cfg` | data | `~/.local/share/mixxx/sandbox.cfg` | macOS sandbox permission bookmarks; loss requires re-granting filesystem access |
-| `effects.xml` | state | `~/.local/state/mixxx/effects.xml` | Current effects chain state (loaded effects per unit); runtime state, not preferences |
-| `samplers.xml` | state | `~/.local/state/mixxx/samplers.xml` | Current sampler deck state (loaded samples); runtime state, not preferences |
-| `mixxx.log` | state | `~/.local/state/mixxx/mixxx.log` | Current session log; the spec lists "action history (logs)" as state |
-| `mixxx.log.1` through `mixxx.log.9` | state | `~/.local/state/mixxx/mixxx.log.1` .. `.9` | Rotated log files; same rationale as current session log |
-| `co_dump_*.csv` | state | `~/.local/state/mixxx/co_dump_*.csv` | Developer debug dumps; diagnostic state data |
-| `analysis/` | cache | `~/.cache/mixxx/analysis/` | Waveform analysis data; regenerable from audio files (see warning below) |
-| `lut/` | cache | `~/.cache/mixxx/lut/` | Vinyl control lookup tables; generated/computed data, regenerable |
+| Current Path (relative to `~/.mixxx/`) | XDG Category | New Path (Linux default)                   | Rationale                                                                                         |
+| -------------------------------------- | ------------ | ------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| `mixxx.cfg`                            | config       | `~/.config/Mixxx/mixxx.cfg`                | Main preferences file; deletion resets all settings to defaults                                   |
+| `soundconfig.xml`                      | config       | `~/.config/Mixxx/soundconfig.xml`          | Sound hardware configuration; user must reconfigure audio devices if lost                         |
+| `Custom.kbd.cfg`                       | config       | `~/.config/Mixxx/Custom.kbd.cfg`           | User keyboard shortcut overrides; configuration by definition                                     |
+| `mixxxdb.sqlite`                       | data         | `~/.local/share/Mixxx/mixxxdb.sqlite`      | Track library database with irreplaceable user metadata (crates, playlists, play counts, ratings) |
+| `controllers/`                         | data         | `~/.local/share/Mixxx/controllers/`        | User-created or user-modified controller mappings; user content                                   |
+| `midi/`                                | data         | `~/.local/share/Mixxx/midi/`               | Legacy controller mappings (pre-1.11.0, still checked); user content                              |
+| `skins/`                               | data         | `~/.local/share/Mixxx/skins/`              | User-created custom skins; user content                                                           |
+| `broadcast_profiles/`                  | data         | `~/.local/share/Mixxx/broadcast_profiles/` | Streaming profiles containing server credentials; user content with secrets                       |
+| `effects/defaults/`                    | data         | `~/.local/share/Mixxx/effects/defaults/`   | User-configured effect presets; user content                                                      |
+| `effects/chains/`                      | data         | `~/.local/share/Mixxx/effects/chains/`     | User-configured effect chain presets; user content                                                |
+| `effects.xml`                          | state        | `~/.local/state/Mixxx/effects.xml`         | Current effects chain state (loaded effects per unit); runtime state, not preferences             |
+| `samplers.xml`                         | state        | `~/.local/state/Mixxx/samplers.xml`        | Current sampler deck state (loaded samples); runtime state, not preferences                       |
+| `mixxx.log`                            | state        | `~/.local/state/Mixxx/mixxx.log`           | Current session log; the spec lists "action history (logs)" as state                              |
+| `mixxx.log.1` through `mixxx.log.9`    | state        | `~/.local/state/Mixxx/mixxx.log.1` .. `.9` | Rotated log files; same rationale as current session log                                          |
+| `co_dump_*.csv`                        | state        | `~/.local/state/Mixxx/co_dump_*.csv`       | Developer debug dumps; diagnostic state data                                                      |
+| `analysis/`                            | cache        | `~/.cache/Mixxx/analysis/`                 | Waveform analysis data; regenerable from audio files (see warning below)                          |
+| `lut/`                                 | cache        | `~/.cache/Mixxx/lut/`                      | Vinyl control lookup tables; generated/computed data, regenerable                                 |
 
 **Notes:**
 
+- `Mixxx` is capitalized per the XDG spec that uses the exact registered
+  application name, which is capitalized.
 - `sandbox.cfg` is macOS-only. The path is set unconditionally in
   the source code, but the file is only written on macOS. It still
   needs a category for the cross-platform path resolver.
@@ -179,7 +174,8 @@ The `analysis/` directory stores pre-computed waveform data (waveforms,
 beatgrids). This data is regenerable from the original audio files,
 making it a cache by the XDG spec definition. However, regeneration is
 expensive: several seconds per track on modern hardware, meaning a
-library of 10,000 tracks could take 1-3 hours to fully re-analyze.
+library of 10,000 tracks could take many minutes to fully re-analyze
+even in parallel.
 
 Users who run cache cleanup tools (BleachBit, `systemd-tmpfiles`,
 manual `rm -rf ~/.cache/*`) will trigger a full re-analysis cycle.
@@ -193,6 +189,9 @@ mitigate through documentation warning users that
 should NOT register with `systemd-tmpfiles` or similar cleanup
 systems. The cache is valid indefinitely as long as the source audio
 files exist.
+
+NOTE: We could decide instead to locate analysis in .local/share if that's
+preferred.
 
 ### Cross-Platform Path Resolution
 
@@ -208,12 +207,12 @@ registered application name.
 The following table shows which `QStandardPaths` enum resolves each
 XDG category on each platform:
 
-| Category | QStandardPaths Enum | Linux | macOS | Windows |
-|----------|---------------------|-------|-------|---------|
-| config | `ConfigLocation` (Linux) / `AppLocalDataLocation` (macOS, Windows) | `~/.config/Mixxx` | `~/Library/Application Support/Mixxx` | `C:/Users/<USER>/AppData/Local/Mixxx` |
-| data | `AppLocalDataLocation` | `~/.local/share/Mixxx` | `~/Library/Application Support/Mixxx` | `C:/Users/<USER>/AppData/Local/Mixxx` |
-| state | `StateLocation` (Qt 6.7+) | `~/.local/state/Mixxx` | `~/Library/Preferences/Mixxx/State` | `C:/Users/<USER>/AppData/Local/Mixxx/State` |
-| cache | `CacheLocation` | `~/.cache/Mixxx` | `~/Library/Caches/Mixxx` | `C:/Users/<USER>/AppData/Local/Mixxx/cache` |
+| Category | QStandardPaths Enum                                                | Linux                  | macOS                                 | Windows                                     |
+| -------- | ------------------------------------------------------------------ | ---------------------- | ------------------------------------- | ------------------------------------------- |
+| config   | `ConfigLocation` (Linux) / `AppLocalDataLocation` (macOS, Windows) | `~/.config/Mixxx`      | `~/Library/Application Support/Mixxx` | `C:/Users/<USER>/AppData/Local/Mixxx`       |
+| data     | `AppLocalDataLocation`                                             | `~/.local/share/Mixxx` | `~/Library/Application Support/Mixxx` | `C:/Users/<USER>/AppData/Local/Mixxx`       |
+| state    | `StateLocation` (Qt 6.7+)                                          | `~/.local/state/Mixxx` | `~/Library/Preferences/Mixxx/State`   | `C:/Users/<USER>/AppData/Local/Mixxx/State` |
+| cache    | `CacheLocation`                                                    | `~/.cache/Mixxx`       | `~/Library/Caches/Mixxx`              | `C:/Users/<USER>/AppData/Local/Mixxx/cache` |
 
 On Linux, config and data resolve to two distinct directories
 (`~/.config/Mixxx` and `~/.local/share/Mixxx`). On macOS and Windows,
@@ -264,11 +263,11 @@ The compile-time guard:
 
 The fallback produces these resolved paths on Qt < 6.7:
 
-| Platform | Fallback State Path |
-|----------|---------------------|
-| Linux | `~/.local/share/Mixxx/State` |
-| macOS | `~/Library/Application Support/Mixxx/State` |
-| Windows | `C:/Users/<USER>/AppData/Local/Mixxx/State` |
+| Platform | Fallback State Path                         |
+| -------- | ------------------------------------------- |
+| Linux    | `~/.local/share/Mixxx/State`                |
+| macOS    | `~/Library/Application Support/Mixxx/State` |
+| Windows  | `C:/Users/<USER>/AppData/Local/Mixxx/State` |
 
 On Linux, the fallback path (`~/.local/share/Mixxx/State`) differs
 from the XDG-correct location (`~/.local/state/Mixxx`). State files
@@ -287,12 +286,12 @@ Because `QStandardPaths` reads these variables on Linux, path
 resolution works transparently with no code changes. Inside a Flatpak
 sandbox, the XDG variables resolve to:
 
-| Variable | Flatpak Sandbox Path |
-|----------|---------------------|
-| `XDG_CONFIG_HOME` | `~/.var/app/org.mixxx.Mixxx/config` |
-| `XDG_DATA_HOME` | `~/.var/app/org.mixxx.Mixxx/data` |
-| `XDG_STATE_HOME` | `~/.var/app/org.mixxx.Mixxx/.local/state` |
-| `XDG_CACHE_HOME` | `~/.var/app/org.mixxx.Mixxx/cache` |
+| Variable          | Flatpak Sandbox Path                      |
+| ----------------- | ----------------------------------------- |
+| `XDG_CONFIG_HOME` | `~/.var/app/org.mixxx.Mixxx/config`       |
+| `XDG_DATA_HOME`   | `~/.var/app/org.mixxx.Mixxx/data`         |
+| `XDG_STATE_HOME`  | `~/.var/app/org.mixxx.Mixxx/.local/state` |
+| `XDG_CACHE_HOME`  | `~/.var/app/org.mixxx.Mixxx/cache`        |
 
 The current Flatpak manifest (`org.mixxx.Mixxx.yaml`) uses
 `--persist=.mixxx` to map the legacy `~/.mixxx` directory into the
@@ -375,11 +374,11 @@ Key observations:
 Each platform has exactly one "most recent" legacy path. This is the
 path that the decision tree checks for existence.
 
-| Platform | Most Recent Legacy Path | Notes |
-|----------|------------------------|-------|
-| Linux/BSD | `~/.mixxx/` | Hardcoded via `MIXXX_SETTINGS_PATH` CMake variable since always |
-| macOS | `~/Library/Application Support/Mixxx/` | Pre-2.3.0 location before macOS sandbox migration |
-| Windows | `C:/Users/<USER>/AppData/Local/Mixxx/` | Current location since Mixxx 1.12.0 via `QStandardPaths::AppLocalDataLocation` |
+| Platform  | Most Recent Legacy Path                | Notes                                                                          |
+| --------- | -------------------------------------- | ------------------------------------------------------------------------------ |
+| Linux/BSD | `~/.mixxx/`                            | Hardcoded via `MIXXX_SETTINGS_PATH` CMake variable since always                |
+| macOS     | `~/Library/Application Support/Mixxx/` | Pre-2.3.0 location before macOS sandbox migration                              |
+| Windows   | `C:/Users/<USER>/AppData/Local/Mixxx/` | Current location since Mixxx 1.12.0 via `QStandardPaths::AppLocalDataLocation` |
 
 Older legacy paths (macOS `~/.mixxx/` from pre-1.9.0, Windows
 `Local Settings/Application Data/Mixxx/` from pre-1.12.0) are already
@@ -478,69 +477,6 @@ consensus.
 
 A wiki page (not part of this proposal) should provide manual migration
 instructions for users who want to move from `~/.mixxx/` to XDG paths.
-The following outline covers the required sections:
-
-**Prerequisites.** Close Mixxx completely. Back up the entire legacy
-directory:
-
-```
-cp -a ~/.mixxx/ ~/.mixxx.backup/
-```
-
-Verify backup integrity before proceeding.
-
-**Create target directories.**
-
-```
-mkdir -p ~/.config/Mixxx ~/.local/share/Mixxx ~/.local/state/Mixxx ~/.cache/Mixxx
-```
-
-**Move files by category.** Reference the file categorization table in
-the "File Categorization" section above. The categories are:
-
-- Config files (`mixxx.cfg`, `soundconfig.xml`, `Custom.kbd.cfg`) to
-  `~/.config/Mixxx/`
-- Data files and directories (`mixxxdb.sqlite`, `controllers/`,
-  `midi/`, `skins/`, `broadcast_profiles/`, `effects/`,
-  `sandbox.cfg`) to `~/.local/share/Mixxx/`
-- State files (`effects.xml`, `samplers.xml`, `mixxx.log*`,
-  `co_dump_*.csv`) to `~/.local/state/Mixxx/`
-- Cache directories (`analysis/`, `lut/`) to `~/.cache/Mixxx/`
-
-**Remove legacy directory.** Only after verifying all files are in
-their new locations:
-
-```
-rm -rf ~/.mixxx/
-```
-
-**Verify.** Launch Mixxx and confirm:
-
-- Library loads correctly (track count matches)
-- Controller mappings work
-- Preferences are intact
-- Effect chains are restored
-
-**Rollback.** If anything fails, restore the backup and remove the
-new directories:
-
-```
-rm -rf ~/.config/Mixxx ~/.local/share/Mixxx ~/.local/state/Mixxx ~/.cache/Mixxx
-mv ~/.mixxx.backup ~/.mixxx
-```
-
-**macOS/Windows note.** These platforms already use platform-standard
-locations. No migration is needed.
-
-**Important details for the guide:**
-
-- The `analysis/` cache can be skipped if disk space is limited, but
-  regeneration is expensive (several seconds per track; a 10,000-track
-  library could take 1-3 hours to re-analyze). The guide must warn
-  about this cost.
-- Case difference: the legacy directory is `~/.mixxx` (lowercase m),
-  while the new XDG paths use `Mixxx` (capital M) from
-  `QStandardPaths`. The guide must use exact paths.
 
 ### Implementation Notes
 
@@ -647,13 +583,13 @@ There are 38 call sites across 21 files that reference
 
 The following table groups call sites by XDG category:
 
-| Category | Call Sites | Key Files | Accessor |
-|----------|-----------|-----------|----------|
-| Config | 3 | `main.cpp`, `soundmanagerconfig.cpp` | `configDir()` |
-| Data | 18 | `mixxxdb.cpp`, `defs_controllers.h`, `skinloader.cpp`, `broadcastsettings.cpp`, `effectchainpresetmanager.cpp` | `dataDir()` |
-| State | 6 | `effectsmanager.cpp`, `playermanager.cpp`, `dlgdevelopertools.cpp` | `stateDir()` |
-| Cache | 2 | `analysisdao.cpp`, `vinylcontrolxwax.cpp` | `cacheDir()` |
-| Meta | 9 | `cmdlineargs.cpp`, `coreservices.cpp`, `upgrade.cpp` | (various) |
+| Category | Call Sites | Key Files                                                                                                      | Accessor      |
+| -------- | ---------- | -------------------------------------------------------------------------------------------------------------- | ------------- |
+| Config   | 3          | `main.cpp`, `soundmanagerconfig.cpp`                                                                           | `configDir()` |
+| Data     | 18         | `mixxxdb.cpp`, `defs_controllers.h`, `skinloader.cpp`, `broadcastsettings.cpp`, `effectchainpresetmanager.cpp` | `dataDir()`   |
+| State    | 6          | `effectsmanager.cpp`, `playermanager.cpp`, `dlgdevelopertools.cpp`                                             | `stateDir()`  |
+| Cache    | 2          | `analysisdao.cpp`, `vinylcontrolxwax.cpp`                                                                      | `cacheDir()`  |
+| Meta     | 9          | `cmdlineargs.cpp`, `coreservices.cpp`, `upgrade.cpp`                                                           | (various)     |
 
 Notable edge cases:
 
@@ -688,54 +624,7 @@ QDir analysisDir(m_pConfig->getSettingsPath() + "analysis");
 QDir analysisDir(m_pathResolver.cacheDir().filePath("analysis"));
 ```
 
-#### Deprecation Bridge for getSettingsPath
-
-Changing all 38 call sites in one PR would be a massive,
-review-hostile diff. A deprecation bridge allows incremental
-migration while both APIs coexist.
-
-**Phase A: Introduce MixxxPathResolver.** Create the class.
-Construct it in `CoreServices::initializeSettings()` before
-`SettingsManager`. Distribute via constructor injection. The
-existing `getSettingsPath()` continues to work unchanged. Both
-APIs coexist.
-
-**Phase B: Migrate call sites incrementally.** Each subsystem is
-updated in a separate PR. Group by risk, lowest first: cache (2
-sites), state (6), config (3), data (18, split into sub-PRs),
-meta (9).
-
-**Phase C: Deprecate getSettingsPath.** Mark
-`CmdlineArgs::getSettingsPath()` and
-`ConfigObject::getSettingsPath()` with `[[deprecated]]`. Optionally
-remove in a future major version.
-
-Backward compatibility notes:
-
-- `getSettingsPath()` never changes behavior. It always returns a
-  single directory path with trailing slash.
-- In legacy mode, typed accessors return the same directory.
-  Migration is purely mechanical with no behavioral change.
-- XDG mode only activates on fresh Linux installs, so there is no
-  urgency. The resolver can be introduced and call sites migrated
-  while legacy mode remains active for all existing users.
-
-What does not change:
-
-- `--settings-path` flag semantics (unchanged).
-- `ConfigObject` constructor (still takes a path string).
-- `SettingsManager` construction.
-- macOS and Windows behavior.
-
 ## Alternatives
 
 Alternative approaches will be evaluated here, including keeping the
 current single-directory layout and other directory organization schemes.
-
-## Action Plan
-
-* [x] Define file categorization table mapping every ~/.mixxx entry to
-  an XDG category
-* [x] Specify cross-platform path resolution using QStandardPaths
-* [x] Design legacy detection and migration strategy
-* [x] Sketch implementation API and deprecation path
