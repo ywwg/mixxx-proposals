@@ -542,6 +542,191 @@ locations. No migration is needed.
   while the new XDG paths use `Mixxx` (capital M) from
   `QStandardPaths`. The guide must use exact paths.
 
+### Implementation Notes
+
+This section provides implementation guidance for developers working
+on the XDG transition. It sketches the proposed API surface,
+inventories the affected call sites, and outlines a deprecation bridge
+for the existing `getSettingsPath()` API. This is not a specification.
+Implementers should adapt the design to fit the codebase as it
+evolves.
+
+#### MixxxPathResolver API Sketch
+
+In [issue #8090](https://github.com/mixxxdj/mixxx/issues/8090),
+holzhaus proposed (October 2021): "As a first step, we should
+introduce a class that allows accessing the different path types
+(cache, data, config) and use it everywhere." The class sketched
+here follows that approach.
+
+Design principles:
+
+- Return `QDir` not `QString` for directory paths. Callers use
+  `QDir::filePath()` to construct full paths, eliminating
+  trailing-slash inconsistencies in the current API.
+- Immutable after construction. Mode and all directory paths are set
+  in the constructor and never change, matching the all-or-nothing
+  decision from Legacy Detection.
+- No platform ifdefs at call sites. The resolver encapsulates all
+  platform logic. Callers call `configDir()` and get the right path
+  regardless of platform or mode.
+- Constructed once in `CoreServices::initializeSettings()` and
+  passed via constructor injection (not a global singleton).
+
+```cpp
+// src/util/mixxxpathresolver.h
+
+#pragma once
+
+#include <QDir>
+#include <QString>
+
+class MixxxPathResolver {
+  public:
+    enum class PathMode {
+        Legacy,  // All files in one directory
+        XDG      // Files split across config/data/state/cache
+    };
+
+    // Factory: determines mode from --settings-path flag
+    // and legacy detection. Must be called before any file
+    // I/O (before logging init).
+    static MixxxPathResolver create(
+            const QString& settingsPathOverride,
+            bool settingsPathSet);
+
+    // Typed directory accessors. Each returns a QDir that
+    // is guaranteed to exist (created in constructor if
+    // needed).
+    QDir configDir() const { return m_configDir; }
+    QDir dataDir() const { return m_dataDir; }
+    QDir stateDir() const { return m_stateDir; }
+    QDir cacheDir() const { return m_cacheDir; }
+
+    PathMode mode() const { return m_mode; }
+
+    // Legacy compatibility: returns dataDir().path() + "/"
+    // Deprecated. Use typed accessors instead.
+    [[deprecated("Use typed accessors instead")]]
+    QString settingsPath() const;
+
+  private:
+    MixxxPathResolver(PathMode mode,
+                      QDir configDir,
+                      QDir dataDir,
+                      QDir stateDir,
+                      QDir cacheDir);
+
+    PathMode m_mode;
+    QDir m_configDir;
+    QDir m_dataDir;
+    QDir m_stateDir;
+    QDir m_cacheDir;
+};
+```
+
+The `create()` factory method implements the startup decision tree
+from Legacy Detection. When `--settings-path` is provided, all four
+directories point to the same location. On Linux/BSD with no legacy
+`~/.mixxx/` directory, it uses `QStandardPaths` for each category,
+including the Qt 6.7 `StateLocation` fallback. On macOS and Windows,
+it returns a single directory as today.
+
+A note on `QDir` return types: the current codebase has inconsistent
+patterns for path construction. Some call sites use
+`QDir::filePath()` (correct), others use string concatenation with
+`+` (fragile, depends on trailing slash). Returning `QDir` forces
+the correct pattern and eliminates an entire class of path bugs.
+
+#### Affected Call Sites
+
+There are 38 call sites across 21 files that reference
+`getSettingsPath()` through two API surfaces:
+`CmdlineArgs::getSettingsPath()` (8 call sites) and
+`ConfigObject::getSettingsPath()` (30 call sites).
+
+The following table groups call sites by XDG category:
+
+| Category | Call Sites | Key Files | Accessor |
+|----------|-----------|-----------|----------|
+| Config | 3 | `main.cpp`, `soundmanagerconfig.cpp` | `configDir()` |
+| Data | 18 | `mixxxdb.cpp`, `defs_controllers.h`, `skinloader.cpp`, `broadcastsettings.cpp`, `effectchainpresetmanager.cpp` | `dataDir()` |
+| State | 6 | `effectsmanager.cpp`, `playermanager.cpp`, `dlgdevelopertools.cpp` | `stateDir()` |
+| Cache | 2 | `analysisdao.cpp`, `vinylcontrolxwax.cpp` | `cacheDir()` |
+| Meta | 9 | `cmdlineargs.cpp`, `coreservices.cpp`, `upgrade.cpp` | (various) |
+
+Notable edge cases:
+
+- `Custom.kbd.cfg` is accessed via `pConfig->getSettingsPath()` in
+  `coreservices.cpp` but is a config file. It must use
+  `configDir()`, not `dataDir()`.
+- `legacycontrollermapping.cpp` uses `getSettingsPath()` for string
+  replacement (deconstructing paths, not constructing them). This
+  call site needs special handling: use `dataDir().path()` as the
+  string to match against.
+- `wmainmenubar.cpp` and `dlgpreflibrary.cpp` open or display "the
+  settings directory" to users. In XDG mode there is no single
+  directory. Recommendation: open the data directory as it contains
+  the most user-relevant files.
+- Trailing slash dependency: the current API appends a trailing
+  slash. `QDir::path()` does not. All migrated call sites must use
+  `QDir::filePath()` instead of string concatenation.
+
+Before/after examples:
+
+```cpp
+// Before (database/mixxxdb.cpp)
+QDir(pConfig->getSettingsPath()).absoluteFilePath(kDefaultFileName);
+// After
+m_pathResolver.dataDir().absoluteFilePath(kDefaultFileName);
+```
+
+```cpp
+// Before (library/dao/analysisdao.cpp)
+QDir analysisDir(m_pConfig->getSettingsPath() + "analysis");
+// After
+QDir analysisDir(m_pathResolver.cacheDir().filePath("analysis"));
+```
+
+#### Deprecation Bridge for getSettingsPath
+
+Changing all 38 call sites in one PR would be a massive,
+review-hostile diff. A deprecation bridge allows incremental
+migration while both APIs coexist.
+
+**Phase A: Introduce MixxxPathResolver.** Create the class.
+Construct it in `CoreServices::initializeSettings()` before
+`SettingsManager`. Distribute via constructor injection. The
+existing `getSettingsPath()` continues to work unchanged. Both
+APIs coexist.
+
+**Phase B: Migrate call sites incrementally.** Each subsystem is
+updated in a separate PR. Group by risk, lowest first: cache (2
+sites), state (6), config (3), data (18, split into sub-PRs),
+meta (9).
+
+**Phase C: Deprecate getSettingsPath.** Mark
+`CmdlineArgs::getSettingsPath()` and
+`ConfigObject::getSettingsPath()` with `[[deprecated]]`. Optionally
+remove in a future major version.
+
+Backward compatibility notes:
+
+- `getSettingsPath()` never changes behavior. It always returns a
+  single directory path with trailing slash.
+- In legacy mode, typed accessors return the same directory.
+  Migration is purely mechanical with no behavioral change.
+- XDG mode only activates on fresh Linux installs, so there is no
+  urgency. The resolver can be introduced and call sites migrated
+  while legacy mode remains active for all existing users.
+
+What does not change:
+
+- `--settings-path` flag semantics (unchanged).
+- `ConfigObject` constructor (still takes a path string).
+- `SettingsManager` construction.
+- macOS and Windows behavior.
+
 ## Alternatives
 
 Alternative approaches will be evaluated here, including keeping the
@@ -553,3 +738,4 @@ current single-directory layout and other directory organization schemes.
   an XDG category
 * [x] Specify cross-platform path resolution using QStandardPaths
 * [x] Design legacy detection and migration strategy
+* [x] Sketch implementation API and deprecation path
