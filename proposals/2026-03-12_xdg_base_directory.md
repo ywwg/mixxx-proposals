@@ -309,6 +309,132 @@ for completeness.
 Neither Flatpak nor Snap require code changes beyond the core switch
 from hardcoded paths to `QStandardPaths`.
 
+### Legacy Detection and Migration
+
+Mixxx must decide at startup whether to operate in legacy single-directory
+mode or XDG split-directory mode. This decision is made once at startup
+and is immutable for the duration of the session. There are exactly two
+modes:
+
+- **Legacy mode:** All files (config, data, state, cache) reside in a
+  single directory.
+- **XDG mode:** Files are distributed across config, data, state, and
+  cache directories as defined by the platform matrix above.
+
+The following subsections specify how the mode is selected, what the
+known legacy paths are, how `--settings-path` interacts with mode
+selection, and why no hybrid mode is permitted.
+
+#### Startup Decision Tree
+
+The startup logic follows this flowchart. Each branch terminates with
+the selected mode. No further mode switching occurs after this point.
+
+```
+START
+  |
+  v
+Was --settings-path provided?
+  |
+  YES --> Use that path as single directory (Legacy mode). DONE.
+  |
+  NO --> What platform?
+           |
+           LINUX/BSD --> Does ~/.mixxx/ exist?
+           |               |
+           |               YES --> Use ~/.mixxx/ as single directory
+           |               |       (Legacy mode). DONE.
+           |               |
+           |               NO --> Use XDG split paths:
+           |                      ConfigLocation, AppLocalDataLocation,
+           |                      StateLocation, CacheLocation.
+           |                      (XDG mode). DONE.
+           |
+           macOS --> Run existing Sandbox::migrateOldSettings() logic.
+           |         Result is always a single directory.
+           |         (Legacy mode, current behavior unchanged). DONE.
+           |
+           Windows --> QStandardPaths::AppLocalDataLocation already used.
+                       Config and data share one directory.
+                       (Legacy mode, current behavior unchanged). DONE.
+```
+
+Key observations:
+
+- Only Linux/BSD gains a new code path (the XDG split). macOS and
+  Windows behavior is unchanged by this proposal.
+- The legacy check is a simple `QDir::exists()` on one known path per
+  platform. No file-content inspection is needed.
+- Mode determination must happen before any file I/O, specifically
+  before logging initialization. The existing
+  `initializeSettings()` -> `initializeLogging()` order in
+  `CoreServices` is correct and must be preserved.
+
+#### Legacy Paths Per Platform
+
+Each platform has exactly one "most recent" legacy path. This is the
+path that the decision tree checks for existence.
+
+| Platform | Most Recent Legacy Path | Notes |
+|----------|------------------------|-------|
+| Linux/BSD | `~/.mixxx/` | Hardcoded via `MIXXX_SETTINGS_PATH` CMake variable since always |
+| macOS | `~/Library/Application Support/Mixxx/` | Pre-2.3.0 location before macOS sandbox migration |
+| Windows | `C:/Users/<USER>/AppData/Local/Mixxx/` | Current location since Mixxx 1.12.0 via `QStandardPaths::AppLocalDataLocation` |
+
+Older legacy paths (macOS `~/.mixxx/` from pre-1.9.0, Windows
+`Local Settings/Application Data/Mixxx/` from pre-1.12.0) are already
+handled by existing upgrade code in `upgrade.cpp` and are out of scope
+for this proposal.
+
+#### The `--settings-path` Flag
+
+**Current behavior:** The `--settings-path` flag accepts a directory
+path and sets `m_settingsPathSet = true`, which gates all automatic
+path detection. When this flag is set, macOS sandbox migration
+(`Sandbox::migrateOldSettings()`), macOS pre-1.9 legacy detection
+(`upgrade.cpp`), and Windows pre-1.12 legacy detection (`upgrade.cpp`)
+are all skipped.
+
+**Proposed behavior:** Identical. When `--settings-path` is provided,
+all files (config, data, state, cache) go into the specified directory.
+No XDG split occurs. No legacy detection runs. This preserves the
+profile-switching use case valued by users who maintain multiple Mixxx
+configurations.
+
+The deprecated `--settingsPath` (camelCase) form continues to work
+identically.
+
+#### All-or-Nothing Mode Selection
+
+Mixxx operates in exactly one of two modes per session. There is no
+hybrid.
+
+- **Legacy mode (single directory):** Triggered by any of:
+  - `--settings-path` flag provided
+  - Legacy directory detected at startup (Linux: `~/.mixxx/` exists)
+  - macOS or Windows (current behavior, single directory already)
+
+- **XDG mode (split directories):** Triggered by:
+  - Fresh Linux/BSD install with no `~/.mixxx/` directory
+
+There is no per-file fallback between legacy and XDG locations. The
+reasons are:
+
+1. **Complexity.** Every file access would need try-legacy-then-XDG
+   logic, creating 30+ branch points across the 21 call sites that
+   reference `getSettingsPath()`.
+2. **Ambiguity.** If `~/.mixxx/mixxx.cfg` exists but
+   `~/.mixxx/controllers/` does not, where do new controller mappings
+   go? The legacy directory or the XDG data directory?
+3. **User confusion.** Some files in the old location, some in the
+   new. Users cannot reason about where their data lives.
+4. **Testing burden.** 2^N combinations of file presence across two
+   location sets makes comprehensive testing impractical.
+
+The all-or-nothing approach matches how macOS sandbox migration already
+works: `Sandbox::migrateOldSettings()` moves the entire directory, not
+individual files.
+
 ## Alternatives
 
 Alternative approaches will be evaluated here, including keeping the
