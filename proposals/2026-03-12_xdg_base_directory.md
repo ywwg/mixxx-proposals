@@ -239,6 +239,76 @@ As a consequence, the path resolver must use `ConfigLocation` only on
 Linux. On macOS and Windows, it returns `AppLocalDataLocation` for
 both config and data categories.
 
+#### StateLocation Fallback (Qt < 6.7)
+
+Mixxx requires Qt >= 6.2, but `QStandardPaths::StateLocation` was
+added in Qt 6.7. Code referencing the `StateLocation` enum will not
+compile on Qt 6.2 through 6.6.
+
+The fallback strategy is to use `AppLocalDataLocation` with a `/State`
+subdirectory when `StateLocation` is unavailable. This matches Qt's
+own internal implementation pattern: on macOS and Windows,
+`StateLocation` always resolves to a subdirectory of another standard
+path.
+
+The compile-time guard:
+
+```cpp
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+    return QStandardPaths::writableLocation(QStandardPaths::StateLocation);
+#else
+    return QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)
+           + QStringLiteral("/State");
+#endif
+```
+
+The fallback produces these resolved paths on Qt < 6.7:
+
+| Platform | Fallback State Path |
+|----------|---------------------|
+| Linux | `~/.local/share/Mixxx/State` |
+| macOS | `~/Library/Application Support/Mixxx/State` |
+| Windows | `C:/Users/<USER>/AppData/Local/Mixxx/State` |
+
+On Linux, the fallback path (`~/.local/share/Mixxx/State`) differs
+from the XDG-correct location (`~/.local/state/Mixxx`). State files
+land inside the data directory rather than in the dedicated state
+directory. When Mixxx's minimum Qt version moves to 6.7+, the
+fallback can be removed and state files will land in the correct XDG
+location. On macOS and Windows, the difference between fallback and
+native Qt 6.7+ paths is minimal (different parent directory, same
+`/State` suffix), and neither platform has an established convention
+for state directories.
+
+#### Flatpak and Snap Path Remapping
+
+Flatpak overrides XDG environment variables inside the sandbox.
+Because `QStandardPaths` reads these variables on Linux, path
+resolution works transparently with no code changes. Inside a Flatpak
+sandbox, the XDG variables resolve to:
+
+| Variable | Flatpak Sandbox Path |
+|----------|---------------------|
+| `XDG_CONFIG_HOME` | `~/.var/app/org.mixxx.Mixxx/config` |
+| `XDG_DATA_HOME` | `~/.var/app/org.mixxx.Mixxx/data` |
+| `XDG_STATE_HOME` | `~/.var/app/org.mixxx.Mixxx/.local/state` |
+| `XDG_CACHE_HOME` | `~/.var/app/org.mixxx.Mixxx/cache` |
+
+The current Flatpak manifest (`org.mixxx.Mixxx.yaml`) uses
+`--persist=.mixxx` to map the legacy `~/.mixxx` directory into the
+sandbox. When Mixxx switches to XDG paths, this directive should be
+removed. Alternatively, it can be retained temporarily to support
+legacy detection during the transition period (see Phase 4).
+
+Snap remaps `HOME` to `~/snap/<snap-name>/<revision>/`, so all XDG
+paths land inside the Snap sandbox automatically. For example,
+`~/.config/Mixxx` becomes `~/snap/mixxx/<rev>/.config/Mixxx`. Mixxx
+does not currently have an official Snap package; this is documented
+for completeness.
+
+Neither Flatpak nor Snap require code changes beyond the core switch
+from hardcoded paths to `QStandardPaths`.
+
 ## Alternatives
 
 Alternative approaches will be evaluated here, including keeping the
