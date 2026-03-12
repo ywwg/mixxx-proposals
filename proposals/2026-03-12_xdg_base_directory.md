@@ -109,9 +109,72 @@ Mixxx developers and packagers.
 
 ## How
 
-This section will describe the implementation approach, including the
-proposed `MixxxPathResolver` API surface, platform path mappings, and
-the legacy detection strategy.
+### File Categorization
+
+The XDG Base Directory Specification defines four user-specific base
+directories, each with a distinct purpose:
+
+- **config** (`$XDG_CONFIG_HOME`, default `~/.config`): User preferences
+  and settings. If deleted, the application resets to defaults but no
+  user data is lost.
+- **data** (`$XDG_DATA_HOME`, default `~/.local/share`): User-created
+  or user-curated content. If deleted, the user loses irreplaceable
+  work.
+- **state** (`$XDG_STATE_HOME`, default `~/.local/state`): Information
+  that persists between application restarts but is not important
+  enough for backup. Logs, history, and runtime layout fall here. If
+  deleted, the application restarts cleanly but loses session history.
+- **cache** (`$XDG_CACHE_HOME`, default `~/.cache`): Non-essential
+  data that can be regenerated from other sources. If deleted, the
+  user notices nothing except a temporary performance impact.
+
+The categorization below uses the spec definitions and the
+[GNOME deletion test](https://wiki.gnome.org/Initiatives/GnomeGoals/XDGConfigFolders)
+heuristic: "if you delete `~/.cache`, no data is lost; if you delete
+`~/.config`, preferences reset; `~/.local/share` is user-created
+content."
+
+| Current Path (relative to `~/.mixxx/`) | XDG Category | New Path (Linux default) | Rationale |
+|----------------------------------------|-------------|--------------------------|-----------|
+| `mixxx.cfg` | config | `~/.config/mixxx/mixxx.cfg` | Main preferences file; deletion resets all settings to defaults |
+| `soundconfig.xml` | config | `~/.config/mixxx/soundconfig.xml` | Sound hardware configuration; user must reconfigure audio devices if lost |
+| `Custom.kbd.cfg` | config | `~/.config/mixxx/Custom.kbd.cfg` | User keyboard shortcut overrides; configuration by definition |
+| `mixxxdb.sqlite` | data | `~/.local/share/mixxx/mixxxdb.sqlite` | Track library database with irreplaceable user metadata (crates, playlists, play counts, ratings) |
+| `controllers/` | data | `~/.local/share/mixxx/controllers/` | User-created or user-modified controller mappings; user content |
+| `midi/` | data | `~/.local/share/mixxx/midi/` | Legacy controller mappings (pre-1.11.0, still checked); user content |
+| `skins/` | data | `~/.local/share/mixxx/skins/` | User-created custom skins; user content |
+| `broadcast_profiles/` | data | `~/.local/share/mixxx/broadcast_profiles/` | Streaming profiles containing server credentials; user content with secrets |
+| `effects/defaults/` | data | `~/.local/share/mixxx/effects/defaults/` | User-configured effect presets; user content |
+| `effects/chains/` | data | `~/.local/share/mixxx/effects/chains/` | User-configured effect chain presets; user content |
+| `sandbox.cfg` | data | `~/.local/share/mixxx/sandbox.cfg` | macOS sandbox permission bookmarks; loss requires re-granting filesystem access |
+| `effects.xml` | state | `~/.local/state/mixxx/effects.xml` | Current effects chain state (loaded effects per unit); runtime state, not preferences |
+| `samplers.xml` | state | `~/.local/state/mixxx/samplers.xml` | Current sampler deck state (loaded samples); runtime state, not preferences |
+| `mixxx.log` | state | `~/.local/state/mixxx/mixxx.log` | Current session log; the spec lists "action history (logs)" as state |
+| `mixxx.log.1` through `mixxx.log.9` | state | `~/.local/state/mixxx/mixxx.log.1` .. `.9` | Rotated log files; same rationale as current session log |
+| `co_dump_*.csv` | state | `~/.local/state/mixxx/co_dump_*.csv` | Developer debug dumps; diagnostic state data |
+| `analysis/` | cache | `~/.cache/mixxx/analysis/` | Waveform analysis data; regenerable from audio files (see warning below) |
+| `lut/` | cache | `~/.cache/mixxx/lut/` | Vinyl control lookup tables; generated/computed data, regenerable |
+
+**Notes:**
+
+- `sandbox.cfg` is macOS-only. The path is set unconditionally in
+  the source code, but the file is only written on macOS. It still
+  needs a category for the cross-platform path resolver.
+- `broadcast_profiles/` is placed in data rather than config because
+  profiles contain server passwords. Data is safer from casual
+  sharing or syncing than config, which users may back up or
+  distribute more freely.
+- `effects.xml` and `samplers.xml` are state, not config. They
+  represent what is currently loaded in each effect unit or sampler
+  deck, not user preferences. Applying the GNOME deletion test:
+  losing them means effect units and sampler decks reset to defaults
+  on next launch. The user does not lose any saved preferences.
+- Legacy files from pre-1.7 Mixxx (`mixxxtrack.xml`,
+  `mixxxbpmscheme.xml`, etc.) appear only in upgrade code and are
+  not created by current Mixxx. They do not need XDG placement.
+
+This section will continue with the proposed `MixxxPathResolver` API
+surface, platform path mappings, and the legacy detection strategy.
 
 ## Alternatives
 
