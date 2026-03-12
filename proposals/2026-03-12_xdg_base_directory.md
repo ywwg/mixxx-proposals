@@ -435,6 +435,113 @@ The all-or-nothing approach matches how macOS sandbox migration already
 works: `Sandbox::migrateOldSettings()` moves the entire directory, not
 individual files.
 
+#### No Automatic Migration
+
+Mixxx will not automatically copy or move files from the legacy
+directory to XDG locations. The rationale:
+
+1. **Beta testing safety.** daschuer (project lead) warned in
+   [#8090](https://github.com/mixxxdj/mixxx/issues/8090) (September
+   2024): "After testing a beta, the stable version will no longer find
+   .mixxx and create a new one: everything gone." If migration moved
+   files out of `~/.mixxx/`, reverting to a stable release would find
+   an empty legacy directory.
+
+2. **No migration code to maintain.** Copy-on-migrate needs error
+   handling for disk full, permissions errors, partial copy rollback,
+   and symlink preservation. GIMP's profile migration code is a
+   cautionary example of this maintenance burden.
+
+3. **User agency.** Users who want XDG paths can manually move files
+   at a time of their choosing, following wiki instructions. Users who
+   prefer `~/.mixxx/` keep it indefinitely with no forced change.
+
+4. **Atomic consistency.** If migration fails halfway, files exist in
+   two places and Mixxx cannot determine which copy is authoritative.
+   The detect-not-migrate approach means files are always in exactly
+   one location.
+
+**Precedent:** Firefox 147 (2025) adopted XDG paths with a similar
+detect-not-migrate approach for the profile directory. New profiles
+use XDG paths; existing profiles stay in `~/.mozilla/firefox/`. This
+validates the pattern for a major desktop application with a much
+larger user base than Mixxx.
+
+**Community consensus:** acolombier proposed in #8090 to "support both
+locations for now, and create in the new XDG compatible location on new
+setup only." Krafting responded: "seems like a better idea than copying
+data indeed!" daschuer suggested: "don't copy, use the old folder if
+found, but default to the new if not." This proposal implements that
+consensus.
+
+#### Wiki Migration Guide Outline
+
+A wiki page (not part of this proposal) should provide manual migration
+instructions for users who want to move from `~/.mixxx/` to XDG paths.
+The following outline covers the required sections:
+
+**Prerequisites.** Close Mixxx completely. Back up the entire legacy
+directory:
+
+```
+cp -a ~/.mixxx/ ~/.mixxx.backup/
+```
+
+Verify backup integrity before proceeding.
+
+**Create target directories.**
+
+```
+mkdir -p ~/.config/Mixxx ~/.local/share/Mixxx ~/.local/state/Mixxx ~/.cache/Mixxx
+```
+
+**Move files by category.** Reference the file categorization table in
+the "File Categorization" section above. The categories are:
+
+- Config files (`mixxx.cfg`, `soundconfig.xml`, `Custom.kbd.cfg`) to
+  `~/.config/Mixxx/`
+- Data files and directories (`mixxxdb.sqlite`, `controllers/`,
+  `midi/`, `skins/`, `broadcast_profiles/`, `effects/`,
+  `sandbox.cfg`) to `~/.local/share/Mixxx/`
+- State files (`effects.xml`, `samplers.xml`, `mixxx.log*`,
+  `co_dump_*.csv`) to `~/.local/state/Mixxx/`
+- Cache directories (`analysis/`, `lut/`) to `~/.cache/Mixxx/`
+
+**Remove legacy directory.** Only after verifying all files are in
+their new locations:
+
+```
+rm -rf ~/.mixxx/
+```
+
+**Verify.** Launch Mixxx and confirm:
+
+- Library loads correctly (track count matches)
+- Controller mappings work
+- Preferences are intact
+- Effect chains are restored
+
+**Rollback.** If anything fails, restore the backup and remove the
+new directories:
+
+```
+rm -rf ~/.config/Mixxx ~/.local/share/Mixxx ~/.local/state/Mixxx ~/.cache/Mixxx
+mv ~/.mixxx.backup ~/.mixxx
+```
+
+**macOS/Windows note.** These platforms already use platform-standard
+locations. No migration is needed.
+
+**Important details for the guide:**
+
+- The `analysis/` cache can be skipped if disk space is limited, but
+  regeneration is expensive (several seconds per track; a 10,000-track
+  library could take 1-3 hours to re-analyze). The guide must warn
+  about this cost.
+- Case difference: the legacy directory is `~/.mixxx` (lowercase m),
+  while the new XDG paths use `Mixxx` (capital M) from
+  `QStandardPaths`. The guide must use exact paths.
+
 ## Alternatives
 
 Alternative approaches will be evaluated here, including keeping the
@@ -442,7 +549,7 @@ current single-directory layout and other directory organization schemes.
 
 ## Action Plan
 
-* [ ] Define file categorization table mapping every ~/.mixxx entry to
+* [x] Define file categorization table mapping every ~/.mixxx entry to
   an XDG category
-* [ ] Specify cross-platform path resolution using QStandardPaths
-* [ ] Design legacy detection and migration strategy
+* [x] Specify cross-platform path resolution using QStandardPaths
+* [x] Design legacy detection and migration strategy
