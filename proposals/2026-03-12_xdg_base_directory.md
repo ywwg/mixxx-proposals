@@ -65,7 +65,28 @@ non-standard path.
 
 ### Pitfalls of the current solution
 
-* Current pitfalls will be documented here.
+* **Home directory clutter.** `~/.mixxx` is a visible dotfile in
+  the user's home directory. XDG-compliant apps use `~/.config/`,
+  `~/.local/share/`, and similar directories, keeping the home
+  directory clean.
+
+* **No separation of concerns.** Config files (restorable from
+  backup), data files (user-created content like controller
+  mappings), cache (regenerable waveform analysis), and state
+  (logs, history) are all mixed together. This makes selective
+  backup, cleanup, and synchronization harder.
+
+* **Cache cleanup tools cannot help.** System cache cleaners
+  (BleachBit, systemd-tmpfiles) operate on `~/.cache/`. Mixxx's
+  analysis cache in `~/.mixxx/` is invisible to them.
+
+* **Read-only home directory breaks Mixxx.** Users who set `$HOME`
+  to read-only (a practice for testing XDG compliance) cannot run
+  Mixxx, since it writes directly to `~/.mixxx`.
+
+* **Inconsistent cross-platform behavior.** macOS and Windows
+  already use platform-standard locations via `QStandardPaths`.
+  Only Linux and BSD use a hardcoded non-standard path.
 
 ## Goals
 
