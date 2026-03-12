@@ -173,6 +173,27 @@ content."
   `mixxxbpmscheme.xml`, etc.) appear only in upgrade code and are
   not created by current Mixxx. They do not need XDG placement.
 
+### Waveform Analysis Cache
+
+The `analysis/` directory stores pre-computed waveform data (waveforms,
+beatgrids). This data is regenerable from the original audio files,
+making it a cache by the XDG spec definition. However, regeneration is
+expensive: several seconds per track on modern hardware, meaning a
+library of 10,000 tracks could take 1-3 hours to fully re-analyze.
+
+Users who run cache cleanup tools (BleachBit, `systemd-tmpfiles`,
+manual `rm -rf ~/.cache/*`) will trigger a full re-analysis cycle.
+This is the single most user-visible consequence of XDG compliance.
+
+The recommendation is to place `analysis/` in cache per the spec. The
+alternative (placing it in `$XDG_DATA_HOME`) would be technically
+incorrect since the data can be regenerated from source. Instead,
+mitigate through documentation warning users that
+`~/.cache/mixxx/analysis/` may be cleaned by system tools. Mixxx
+should NOT register with `systemd-tmpfiles` or similar cleanup
+systems. The cache is valid indefinitely as long as the source audio
+files exist.
+
 This section will continue with the proposed `MixxxPathResolver` API
 surface, platform path mappings, and the legacy detection strategy.
 
