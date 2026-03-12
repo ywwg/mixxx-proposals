@@ -17,11 +17,51 @@
 
 ## Why
 
-This section explains why Mixxx should adopt XDG Base Directory paths.
-Mixxx currently stores all user data, configuration, caches, and state in a
-single `~/.mixxx` directory. This violates the XDG Base Directory
-Specification on Linux and misses platform-standard locations on macOS and
-Windows.
+Mixxx stores all user data in a single `~/.mixxx` directory on Linux
+and BSD. The path is set via a hardcoded CMake variable
+(`MIXXX_SETTINGS_PATH`) and constructed at startup in
+`src/util/cmdlineargs.cpp`. This one directory holds configuration
+files, the track database, controller mappings, custom skins, logs,
+and waveform analysis cache.
+
+The [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/latest/)
+defines standard locations for user-specific files on Linux and BSD.
+Most modern Linux desktop applications follow this spec. Mixxx
+violates it by mixing configuration, data, state, and cache in a
+single location rather than separating them into the directories the
+spec requires.
+
+The spec defines four user-specific base directories:
+`$XDG_CONFIG_HOME` (default `~/.config`) for configuration,
+`$XDG_DATA_HOME` (default `~/.local/share`) for persistent data,
+`$XDG_STATE_HOME` (default `~/.local/state`) for state that persists
+between restarts but is not important enough for backup (logs,
+history, layout), and `$XDG_CACHE_HOME` (default `~/.cache`) for
+non-essential cached data that may be deleted at any time. The core
+principle is separation of concerns: users and system tools can
+manage each category independently. Note that `$XDG_STATE_HOME` was
+added to the spec in 2021, making it the newest of the four.
+
+The Mixxx codebase already acknowledges this gap. In
+`src/util/cmdlineargs.cpp`, the following comment guards the
+Linux/BSD path:
+
+```cpp
+// We are not ready to switch to XDG folders under Linux, so keeping $HOME/.mixxx as preferences folder. see #8090
+```
+
+[Issue #8090](https://github.com/mixxxdj/mixxx/issues/8090)
+("replace ~/.mixxx folder with XDG config folders") has been open
+since 2015 with 34 comments. The discussion has seen periodic
+renewed interest in 2015, 2018, 2021, 2024, and 2025, with
+contributors proposing path resolver classes and detect-not-migrate
+strategies, but no implementation has landed.
+
+macOS and Windows already use platform-standard locations via
+`QStandardPaths::AppLocalDataLocation` (`~/Library/Application
+Support/Mixxx/` on macOS, `%LOCALAPPDATA%/Mixxx/` on Windows).
+Linux and BSD are the only platforms where Mixxx uses a hardcoded
+non-standard path.
 
 ### Pitfalls of the current solution
 
