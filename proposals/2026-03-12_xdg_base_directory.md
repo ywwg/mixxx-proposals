@@ -194,8 +194,50 @@ should NOT register with `systemd-tmpfiles` or similar cleanup
 systems. The cache is valid indefinitely as long as the source audio
 files exist.
 
-This section will continue with the proposed `MixxxPathResolver` API
-surface, platform path mappings, and the legacy detection strategy.
+### Cross-Platform Path Resolution
+
+Mixxx uses Qt's `QStandardPaths` API to resolve platform-standard
+directories for user files. The application sets
+`QCoreApplication::setApplicationName("Mixxx")` with no
+`organizationName`, so `QStandardPaths` appends just `Mixxx` to each
+base path. Note the intentional case difference from the legacy
+`~/.mixxx` directory (lowercase m): the new XDG paths use capital-M
+`Mixxx` because that is what `QStandardPaths` produces from the
+registered application name.
+
+The following table shows which `QStandardPaths` enum resolves each
+XDG category on each platform:
+
+| Category | QStandardPaths Enum | Linux | macOS | Windows |
+|----------|---------------------|-------|-------|---------|
+| config | `ConfigLocation` (Linux) / `AppLocalDataLocation` (macOS, Windows) | `~/.config/Mixxx` | `~/Library/Application Support/Mixxx` | `C:/Users/<USER>/AppData/Local/Mixxx` |
+| data | `AppLocalDataLocation` | `~/.local/share/Mixxx` | `~/Library/Application Support/Mixxx` | `C:/Users/<USER>/AppData/Local/Mixxx` |
+| state | `StateLocation` (Qt 6.7+) | `~/.local/state/Mixxx` | `~/Library/Preferences/Mixxx/State` | `C:/Users/<USER>/AppData/Local/Mixxx/State` |
+| cache | `CacheLocation` | `~/.cache/Mixxx` | `~/Library/Caches/Mixxx` | `C:/Users/<USER>/AppData/Local/Mixxx/cache` |
+
+On Linux, config and data resolve to two distinct directories
+(`~/.config/Mixxx` and `~/.local/share/Mixxx`). On macOS and Windows,
+both resolve to the same `AppLocalDataLocation` directory. This means
+the config/data split is Linux-only for practical purposes.
+
+The reason is platform-specific:
+
+- **macOS:** `ConfigLocation` resolves to `~/Library/Preferences`
+  with no application subdirectory. That directory is designed for
+  `.plist` files managed by `NSUserDefaults`, not arbitrary config
+  directories. Using it would scatter Mixxx files into a shared
+  system directory. The path resolver must return
+  `AppLocalDataLocation` (`~/Library/Application Support/Mixxx`) for
+  both config and data on macOS.
+
+- **Windows:** `ConfigLocation` and `AppLocalDataLocation` both
+  resolve to the same path (`C:/Users/<USER>/AppData/Local/Mixxx`).
+  There is no config/data split to exploit. The path resolver returns
+  `AppLocalDataLocation` for both.
+
+As a consequence, the path resolver must use `ConfigLocation` only on
+Linux. On macOS and Windows, it returns `AppLocalDataLocation` for
+both config and data categories.
 
 ## Alternatives
 
