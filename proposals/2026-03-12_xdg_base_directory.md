@@ -329,7 +329,7 @@ selection, and why no hybrid mode is permitted.
 The startup logic follows this flowchart. Each branch terminates with
 the selected mode. No further mode switching occurs after this point.
 
-```
+```text
 START
   |
   v
