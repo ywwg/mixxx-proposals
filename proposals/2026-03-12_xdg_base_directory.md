@@ -1,17 +1,17 @@
 # XDG Base Directory Support
 
-* **Owners:**
-  * Owen Williams <owilliams@mixxx.org>
+- **Owners:**
+  - Owen Williams <owilliams@mixxx.org>
 
-* **Proposal Status:** `Draft`
+- **Proposal Status:** `Draft`
 
-* **Implementation Status:** `Not implemented`
+- **Implementation Status:** `Not implemented`
 
-* **Related Issues and PRs:**
-  * [XDG Base Directory support](https://github.com/mixxxdj/mixxx/issues/8090)
+- **Related Issues and PRs:**
+  - [XDG Base Directory support](https://github.com/mixxxdj/mixxx/issues/8090)
 
-* **Other docs or links:**
-  * [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/latest/)
+- **Other docs or links:**
+  - [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/latest/)
 
 > TL;DR: Migrate Mixxx from a single ~/.mixxx directory to XDG Base Directory
 > compliant paths on Linux, using platform-standard locations on macOS and
@@ -59,26 +59,26 @@ non-standard path.
 
 ### Pitfalls of the current solution
 
-* **Home directory clutter.** `~/.mixxx` is a visible dotfile in
+- **Home directory clutter.** `~/.mixxx` is a visible dotfile in
   the user's home directory. XDG-compliant apps use `~/.config/`,
   `~/.local/share/`, and similar directories, keeping the home
   directory clean.
 
-* **No separation of concerns.** Config files (restorable from
+- **No separation of concerns.** Config files (restorable from
   backup), data files (user-created content like controller
   mappings), cache (regenerable waveform analysis), and state
   (logs, history) are all mixed together. This makes selective
   backup, cleanup, and synchronization harder.
 
-* **Cache cleanup tools cannot help.** System cache cleaners
+- **Cache cleanup tools cannot help.** System cache cleaners
   (BleachBit, systemd-tmpfiles) operate on `~/.cache/`. Mixxx's
   analysis cache in `~/.mixxx/` is invisible to them.
 
-* **Read-only home directory breaks Mixxx.** Users who set `$HOME`
+- **Read-only home directory breaks Mixxx.** Users who set `$HOME`
   to read-only (a practice for testing XDG compliance) cannot run
   Mixxx, since it writes directly to `~/.mixxx`.
 
-* **Inconsistent cross-platform behavior.** macOS and Windows
+- **Inconsistent cross-platform behavior.** macOS and Windows
   already use platform-standard locations via `QStandardPaths`.
   Only Linux and BSD use a hardcoded non-standard path.
 
@@ -86,10 +86,10 @@ non-standard path.
 
 Goals and use cases for the solution as proposed in [How](#how):
 
-* Separate Mixxx files into the correct XDG categories (config, data,
+- Separate Mixxx files into the correct XDG categories (config, data,
   state, cache) on Linux.
-* Use platform-standard locations on macOS and Windows.
-* Preserve backward compatibility for existing installations that use
+- Use platform-standard locations on macOS and Windows.
+- Preserve backward compatibility for existing installations that use
   `~/.mixxx`.
 
 ### Audience
@@ -98,8 +98,8 @@ Mixxx developers and packagers.
 
 ## Non-Goals
 
-* Automatic migration of existing `~/.mixxx` directories.
-* Changing the behavior of the `--settings-path` command-line flag.
+- Automatic migration of existing `~/.mixxx` directories.
+- Changing the behavior of the `--settings-path` command-line flag.
 
 ## How
 
